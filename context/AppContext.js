@@ -82,10 +82,62 @@ export function AppProvider({ children }) {
   const [adminUser, setAdminUser] = useState('');
 
   // ── ERP Data Matrices ──
-  const [orders, setOrders] = useState([]);
-  const [wasteLogs, setWasteLogs] = useState([]);
-  const [pastShifts, setPastShifts] = useState([]);
-  const [tablesData, setTablesData] = useState(INITIAL_TABLES_DATA);
+  const [orders, setOrders] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('demashki_orders');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing orders from localStorage', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  const [wasteLogs, setWasteLogs] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('demashki_waste');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing wasteLogs from localStorage', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  const [pastShifts, setPastShifts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('demashki_shifts');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing pastShifts from localStorage', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  const [tablesData, setTablesData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('demashki_tables');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing tablesData from localStorage', e);
+        }
+      }
+    }
+    return INITIAL_TABLES_DATA;
+  });
+
   const [branches, setBranches] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('demashki_branches');
@@ -98,6 +150,20 @@ export function AppProvider({ children }) {
       }
     }
     return INITIAL_BRANCHES;
+  });
+
+  const [menuCatalog, setMenuCatalog] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('demashki_menu');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Error parsing menuCatalog from localStorage', e);
+        }
+      }
+    }
+    return [];
   });
 
   // ── Toast Notification State ──
@@ -125,14 +191,18 @@ export function AppProvider({ children }) {
     }
 
     // Flush out older mock cached entries to ensure clean slate
-    const mockCleared = localStorage.getItem('demashki_mock_cleared_v3');
+    const mockCleared = localStorage.getItem('demashki_mock_cleared_v5');
     if (!mockCleared) {
       localStorage.removeItem('demashki_orders');
       localStorage.removeItem('demashki_waste');
+      localStorage.removeItem('demashki_shifts');
+      localStorage.removeItem('demashki_menu');
+      localStorage.removeItem('demashki_tables');
       localStorage.removeItem('demashki_past_shifts');
       localStorage.removeItem('demashki_tables_data');
       localStorage.removeItem('demashki_branches'); // Reset branches to clean INITIAL_BRANCHES
-      localStorage.setItem('demashki_mock_cleared_v3', 'true');
+      localStorage.removeItem('demashki_menu_catalog'); // Reset menu catalog
+      localStorage.setItem('demashki_mock_cleared_v5', 'true');
       // Trigger a page refresh to force-initialize everything to the clean slate
       window.location.reload();
     }
@@ -152,6 +222,41 @@ export function AppProvider({ children }) {
       localStorage.setItem('demashki_branches', JSON.stringify(branches));
     }
   }, [branches]);
+
+  // ── Persist menu catalog state changes to localStorage ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demashki_menu', JSON.stringify(menuCatalog));
+    }
+  }, [menuCatalog]);
+
+  // ── Persist orders state changes to localStorage ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demashki_orders', JSON.stringify(orders));
+    }
+  }, [orders]);
+
+  // ── Persist waste state changes to localStorage ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demashki_waste', JSON.stringify(wasteLogs));
+    }
+  }, [wasteLogs]);
+
+  // ── Persist past shifts state changes to localStorage ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demashki_shifts', JSON.stringify(pastShifts));
+    }
+  }, [pastShifts]);
+
+  // ── Persist tables state changes to localStorage ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demashki_tables', JSON.stringify(tablesData));
+    }
+  }, [tablesData]);
 
   // ── Auto-dismiss toast after 3 seconds ──
   useEffect(() => {
@@ -224,6 +329,10 @@ export function AppProvider({ children }) {
     setTablesData,
     branches,
     setBranches,
+    menuCatalog,
+    setMenuCatalog,
+    menuItems: menuCatalog,
+    setMenuItems: setMenuCatalog,
 
     // Toast
     toast,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppContext } from '@/context/AppContext';
 
@@ -28,7 +28,7 @@ const renderStockBadge = (level) => {
 };
 
 export default function HomePage() {
-  const { addToCart, showToast, orders, setOrders, playChime } = useAppContext();
+  const { addToCart, showToast, orders, setOrders, playChime, tablesData, menuCatalog } = useAppContext();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -40,11 +40,28 @@ export default function HomePage() {
   const [screenshotUrl, setScreenshotUrl] = useState(null);
 
   // Selected meals for booking
-  const [bookingMeals, setBookingMeals] = useState([
-    { id: 1, name: 'شاورما عربي دبل', price: 150, qty: 0, stockLevel: 'high' },
-    { id: 2, name: 'ساندوتش شاورما لحم', price: 90, qty: 0, stockLevel: 'low' },
-    { id: 3, name: 'فتة شاورما مشكل', price: 150, qty: 0, stockLevel: 'high' },
-  ]);
+  const [bookingMeals, setBookingMeals] = useState([]);
+
+  // Sync booking meals from dynamic menu catalog
+  useEffect(() => {
+    if (menuCatalog) {
+      setBookingMeals(
+        menuCatalog
+          .filter((item) => item.active !== false)
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            qty: 0,
+            stockLevel: item.stockLevel || 'high',
+          }))
+      );
+    }
+  }, [menuCatalog]);
+
+  // Calculate dynamic empty tables count for selected branch
+  const currentBranchTables = (tablesData && tablesData[branch]) || [];
+  const emptyTablesCount = currentBranchTables.filter((t) => t.status === 'empty').length;
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [ticketCode, setTicketCode] = useState('');
@@ -115,32 +132,9 @@ export default function HomePage() {
     }
   };
 
-  const previewItems = [
-    {
-      id: 1,
-      name: 'شاورما عربي دبل',
-      price: 150,
-      desc: 'وجبة شاورما دجاج مدبّلة بالثوم والبطاطس المحمرة.',
-      img: 'https://images.unsplash.com/photo-1644704180697-46280a1557a3?q=80&w=600',
-      stockLevel: 'high',
-    },
-    {
-      id: 2,
-      name: 'ساندوتش شاورما لحم',
-      price: 90,
-      desc: 'شاورما لحم بخبز الصاج المميز مع الخيار المخلل.',
-      img: 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?q=80&w=600',
-      stockLevel: 'low',
-    },
-    {
-      id: 3,
-      name: 'ثومية إضافية',
-      price: 20,
-      desc: 'صوص الثومية الدمشقي الأصيل المحضر منزلياً.',
-      img: 'https://images.unsplash.com/photo-1571115177098-24ec420951d5?q=80&w=600',
-      stockLevel: 'high',
-    },
-  ];
+  const previewItems = (menuCatalog || [])
+    .filter((item) => item.active !== false)
+    .slice(0, 3);
 
   return (
     <main className="flex-grow">
@@ -204,38 +198,44 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {previewItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col text-right animate-fade-in justify-between"
-            >
-              <div>
-                <div className="h-56 m-2 overflow-hidden rounded-lg arch-mask relative">
-                  <img className="w-full h-full object-cover" src={item.img} alt={item.name} />
-                  {/* Advanced Menu Stock Warning Badges */}
-                  <div className="absolute top-2 right-2">{renderStockBadge(item.stockLevel)}</div>
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-primary text-lg">{item.name}</h3>
-                  <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-              <div className="p-5 pt-0">
-                <div className="flex flex-row-reverse justify-between items-center mt-2">
-                  <span className="font-semibold text-tertiary-container">{item.price} ج.م</span>
-                  <button
-                    onClick={() => {
-                      addToCart(item);
-                      showToast('تم إضافة ' + item.name + ' إلى السلة', 'success');
-                    }}
-                    className="py-2 px-6 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-on-primary transition-all font-bold text-xs scale-95 active:scale-90 cursor-pointer"
-                  >
-                    أضف للسلة
-                  </button>
-                </div>
-              </div>
+          {previewItems.length === 0 ? (
+            <div className="text-center py-12 text-on-surface-variant font-bold col-span-3 bg-surface-container-lowest border border-dashed border-outline-variant/30 rounded-xl select-none">
+              📦 قائمة الطعام فارغة، يرجى إضافة وجبات جديدة
             </div>
-          ))}
+          ) : (
+            previewItems.map((item) => (
+              <div
+                key={item.id}
+                className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col text-right animate-fade-in justify-between"
+              >
+                <div>
+                  <div className="h-56 m-2 overflow-hidden rounded-lg arch-mask relative">
+                    <img className="w-full h-full object-cover" src={item.img} alt={item.name} />
+                    {/* Advanced Menu Stock Warning Badges */}
+                    <div className="absolute top-2 right-2">{renderStockBadge(item.stockLevel)}</div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-bold text-primary text-lg">{item.name}</h3>
+                    <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+                <div className="p-5 pt-0">
+                  <div className="flex flex-row-reverse justify-between items-center mt-2">
+                    <span className="font-semibold text-tertiary-container">{item.price} ج.م</span>
+                    <button
+                      onClick={() => {
+                        addToCart(item);
+                        showToast('تم إضافة ' + item.name + ' إلى السلة', 'success');
+                      }}
+                      className="py-2 px-6 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-on-primary transition-all font-bold text-xs scale-95 active:scale-90 cursor-pointer"
+                    >
+                      أضف للسلة
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -376,34 +376,40 @@ export default function HomePage() {
                     اطلب وجبات مع الحجز (اختياري)
                   </label>
                   <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border border-outline-variant/30 p-2.5 rounded-lg bg-surface/50">
-                    {bookingMeals.map((meal) => (
-                      <div
-                        key={meal.id}
-                        className="flex flex-row-reverse justify-between items-center text-xs font-bold border-b border-outline-variant/10 pb-1.5 last:border-b-0"
-                      >
-                        <span className="flex items-center gap-2">
-                          {meal.name} ({meal.price} ج.م)
-                          {renderStockBadge(meal.stockLevel)}
-                        </span>
-                        <div className="flex items-center gap-1.5 font-sans">
-                          <button
-                            type="button"
-                            onClick={() => handleMealQty(meal.id, -1)}
-                            className="w-6 h-6 bg-surface-container rounded border border-outline-variant/30 flex items-center justify-center cursor-pointer"
-                          >
-                            -
-                          </button>
-                          <span className="font-mono text-sm">{meal.qty}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleMealQty(meal.id, 1)}
-                            className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center cursor-pointer"
-                          >
-                            +
-                          </button>
-                        </div>
+                    {bookingMeals.length === 0 ? (
+                      <div className="text-center py-4 text-xs text-on-surface-variant font-bold select-none">
+                        📦 لا توجد وجبات متاحة للطلب المسبق حالياً
                       </div>
-                    ))}
+                    ) : (
+                      bookingMeals.map((meal) => (
+                        <div
+                          key={meal.id}
+                          className="flex flex-row-reverse justify-between items-center text-xs font-bold border-b border-outline-variant/10 pb-1.5 last:border-b-0"
+                        >
+                          <span className="flex items-center gap-2">
+                            {meal.name} ({meal.price} ج.م)
+                            {renderStockBadge(meal.stockLevel)}
+                          </span>
+                          <div className="flex items-center gap-1.5 font-sans">
+                            <button
+                              type="button"
+                              onClick={() => handleMealQty(meal.id, -1)}
+                              className="w-6 h-6 bg-surface-container rounded border border-outline-variant/30 flex items-center justify-center cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="font-mono text-sm">{meal.qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleMealQty(meal.id, 1)}
+                              className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -479,7 +485,7 @@ export default function HomePage() {
               <div className="absolute top-6 right-6">
                 <span className="bg-black/75 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20 shadow-md font-sans">
                   <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
-                  🔥 المتاح الآن: 8 طاولات
+                  🔥 المتاح الآن: {emptyTablesCount} {emptyTablesCount === 1 ? 'طاولة' : 'طاولات'}
                 </span>
               </div>
             </div>

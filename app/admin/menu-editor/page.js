@@ -27,9 +27,10 @@ const renderStockBadge = (level) => {
 };
 
 export default function AdminMenuEditor() {
-  const { showToast } = useAppContext();
+  const { showToast, menuCatalog, setMenuCatalog } = useAppContext();
 
-  const [menuItems, setMenuItems] = useState([]);
+  const menuItems = menuCatalog;
+  const setMenuItems = setMenuCatalog;
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
@@ -207,42 +208,50 @@ export default function AdminMenuEditor() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20 font-semibold text-on-surface-variant">
-              {menuItems.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
-                  <td className="p-4 font-mono text-primary font-bold">#{item.id}</td>
-                  <td className="p-4">
-                    <div className="w-10 h-10 rounded overflow-hidden border border-outline-variant/30">
-                      <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                    </div>
-                  </td>
-                  <td className="p-4 font-bold text-on-surface">{item.name}</td>
-                  <td className="p-4 font-mono">{item.price} ج.م</td>
-                  <td className="p-4">{renderStockBadge(item.stockLevel || 'high')}</td>
-                  <td className="p-4">{item.desc}</td>
-                  <td className="p-4 text-center">
-                    <span
-                      className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        item.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {item.active ? 'نشط' : 'غير نشط / نفذ'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <button
-                      type="button"
-                      onClick={() => toggleActive(item.id)}
-                      className={`py-1 px-3 rounded text-[10px] font-bold transition-all shadow-sm cursor-pointer ${
-                        item.active
-                          ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                          : 'bg-green-50 text-green-700 hover:bg-green-100'
-                      }`}
-                    >
-                      {item.active ? 'تعطيل الوجبة' : 'تفعيل الوجبة'}
-                    </button>
+              {menuItems.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="p-8 text-center text-on-surface-variant font-bold">
+                    📦 قائمة الطعام فارغة، يرجى إضافة وجبات جديدة
                   </td>
                 </tr>
-              ))}
+              ) : (
+                menuItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
+                    <td className="p-4 font-mono text-primary font-bold">#{item.id}</td>
+                    <td className="p-4">
+                      <div className="w-10 h-10 rounded overflow-hidden border border-outline-variant/30">
+                        <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                    </td>
+                    <td className="p-4 font-bold text-on-surface">{item.name}</td>
+                    <td className="p-4 font-mono">{item.price} ج.م</td>
+                    <td className="p-4">{renderStockBadge(item.stockLevel || 'high')}</td>
+                    <td className="p-4">{item.desc}</td>
+                    <td className="p-4 text-center">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          item.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {item.active ? 'نشط' : 'غير نشط / نفذ'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleActive(item.id)}
+                        className={`py-1 px-3 rounded text-[10px] font-bold transition-all shadow-sm cursor-pointer ${
+                          item.active
+                            ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                            : 'bg-green-50 text-green-700 hover:bg-green-100'
+                        }`}
+                      >
+                        {item.active ? 'تعطيل الوجبة' : 'تفعيل الوجبة'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

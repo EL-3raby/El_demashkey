@@ -26,62 +26,53 @@ const renderStockBadge = (level) => {
 };
 
 export default function MenuPage() {
-  const { addToCart, showToast } = useAppContext();
+  const { addToCart, showToast, menuCatalog } = useAppContext();
 
-  const menuData = [
-    {
-      id: 1,
-      name: 'شاورما دجاج عربي',
-      price: 120,
-      desc: 'وجبة شاورما دجاج ممتازة بطعم لا ينسى.',
-      img: 'https://images.unsplash.com/photo-1644704180697-46280a1557a3?q=80&w=600',
-      stockLevel: 'high',
-    },
-    {
-      id: 2,
-      name: 'ساندوتش شاورما لحم',
-      price: 90,
-      desc: 'شاورما لحم بخبز الصاج والثومية والخلطة الدمشقية.',
-      img: 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?q=80&w=600',
-      stockLevel: 'low',
-    },
-  ];
+  const menuItems = (menuCatalog || []).filter((item) => item.active !== false);
 
   return (
     <main className="max-w-container-max mx-auto px-4 md:px-10 py-12 flex-grow bg-pattern text-right">
       <h1 className="text-center font-display-lg text-primary text-3xl mb-8 font-bold">قائمة الطعام</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menuData.map((item) => (
-          <div
-            key={item.id}
-            className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col text-right animate-fade-in justify-between"
-          >
-            <div>
-              <div className="h-48 arch-mask-menu m-2 overflow-hidden relative">
-                <img className="w-full h-full object-cover" src={item.img} alt={item.name} />
-                <div className="absolute top-2 right-2">{renderStockBadge(item.stockLevel)}</div>
+      
+      {menuItems.length === 0 ? (
+        <div className="text-center py-16 text-on-surface-variant font-bold bg-surface-container-lowest rounded-xl border border-dashed border-outline-variant/30 max-w-md mx-auto animate-fade-in flex flex-col items-center justify-center gap-2 select-none">
+          <span className="text-4xl">📦</span>
+          <span>قائمة الطعام فارغة، يرجى إضافة وجبات جديدة</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {menuItems.map((item) => (
+            <div
+              key={item.id}
+              className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col text-right animate-fade-in justify-between"
+            >
+              <div>
+                <div className="h-48 arch-mask-menu m-2 overflow-hidden relative">
+                  <img className="w-full h-full object-cover" src={item.img} alt={item.name} />
+                  <div className="absolute top-2 right-2">{renderStockBadge(item.stockLevel)}</div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-primary text-lg">{item.name}</h3>
+                  <p className="text-xs text-on-surface-variant mt-1 mb-2 leading-relaxed">{item.desc}</p>
+                </div>
               </div>
-              <div className="p-4">
-                <h3 className="font-bold text-primary text-lg">{item.name}</h3>
-                <p className="text-xs text-on-surface-variant mt-1 mb-2 leading-relaxed">{item.desc}</p>
+              <div className="p-4 pt-0">
+                <span className="font-semibold text-tertiary-container">{item.price} ج.م</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToCart(item);
+                    showToast('تم إضافة ' + item.name + ' إلى السلة', 'success');
+                  }}
+                  className="w-full mt-4 py-2 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-on-primary transition-all duration-300 font-bold text-sm cursor-pointer"
+                >
+                  أضف للسلة
+                </button>
               </div>
             </div>
-            <div className="p-4 pt-0">
-              <span className="font-semibold text-tertiary-container">{item.price} ج.م</span>
-              <button
-                type="button"
-                onClick={() => {
-                  addToCart(item);
-                  showToast('تم إضافة ' + item.name + ' إلى السلة', 'success');
-                }}
-                className="w-full mt-4 py-2 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-on-primary transition-all duration-300 font-bold text-sm cursor-pointer"
-              >
-                أضف للسلة
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
