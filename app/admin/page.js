@@ -19,6 +19,38 @@ export default function AdminDashboardPage() {
 
   const [showReportModal, setShowReportModal] = useState(false);
 
+  const handleExportCSV = () => {
+    const filteredOrders = orders.filter(
+      (o) => activeBranch === 'all' || o.branch === activeBranch
+    );
+
+    const headers = ['رقم الطلب', 'العميل', 'الطلبات', 'الإجمالي', 'التاريخ', 'الفرع'];
+    const rows = filteredOrders.map((o) => {
+      const branchName = o.branch === 'rahabat' ? 'فرع الراهبات' : 'الفرع الرئيسي';
+      const cleanItems = `"${(o.items || '').replace(/"/g, '""')}"`;
+      const cleanCustomer = `"${(o.customer || '').replace(/"/g, '""')}"`;
+      const cleanDate = `"${(o.date || '').replace(/"/g, '""')}"`;
+      return [
+        o.id || '',
+        cleanCustomer,
+        cleanItems,
+        o.total || 0,
+        cleanDate,
+        branchName
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'demashki_daily_report.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // ══════════════════════════════════════════════════════════════════
   // RBAC Security: Strict Financial Lockdown for Cashier
   // ══════════════════════════════════════════════════════════════════
@@ -190,6 +222,15 @@ export default function AdminDashboardPage() {
               تحميل تقرير اليوم الإحصائي
             </button>
           )}
+
+          {/* CSV Data Export Button */}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="bg-secondary-container hover:bg-outline-variant/30 text-primary py-2 px-4 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-90"
+          >
+            تصدير التقرير (CSV) 📊
+          </button>
 
           {/* Branch Filter (Super Admin = dropdown, Branch Manager = static badge) */}
           {currentRole === 'super_admin' ? (

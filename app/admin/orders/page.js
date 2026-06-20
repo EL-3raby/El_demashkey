@@ -499,8 +499,8 @@ export default function AdminOrdersPage() {
           Thermal Receipt Print Modal
          ══════════════════════════════════════════════════════════════════ */}
       {selectedPrintOrder && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black p-6 rounded-lg w-full max-w-sm font-mono text-sm border-2 border-black flex flex-col text-right shadow-2xl relative">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 print-area">
+          <div className="bg-white text-black p-6 rounded-lg w-full max-w-sm font-mono text-sm border-2 border-black flex flex-col text-right shadow-2xl relative receipt-print-zone">
             {/* Close */}
             <button
               type="button"

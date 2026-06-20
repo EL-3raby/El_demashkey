@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 // Stock badge helper
@@ -37,6 +37,13 @@ export default function TableReservationPage() {
   const [branch, setBranch] = useState('main');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [screenshotUrl, setScreenshotUrl] = useState(null);
+  const [minDate, setMinDate] = useState('');
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setMinDate(today);
+    setDate(today);
+  }, []);
 
   // Selected meals for booking
   const [bookingMeals, setBookingMeals] = useState([
@@ -211,6 +218,7 @@ export default function TableReservationPage() {
                   type="date"
                   required
                   value={date}
+                  min={minDate}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full px-3 py-3 rounded-lg border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary bg-surface/50 text-on-surface outline-none text-xs font-bold text-right"
                 />
@@ -335,7 +343,7 @@ export default function TableReservationPage() {
         </div>
         <div className="relative min-h-[300px] lg:min-h-full">
           <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNZK8aodpzPAxV5GLlfxfIRw5uR72PvBnfDBeC_8nhtgFR6Nk67GKWUnljgfdHEEayMfh8BYzjGRzFbZV47C23e1TEjeEvR-VHBI6c4W1P4skwr1_JRZtwUINpslChAXjt46WxpFvR0PsVXBqKBvX6yIfgBTI_RMXeTyEgjfj2jh5I9XXYz7aKQiK5kCnjMldNeM6RheDNacUe37R24AuEzKXpgU22CjrXlfmTkY8yryzhxIvRj3eIr82jMp2ztC9_cazDovD3Bw"
+            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800"
             alt="Demashki Interior"
             className="w-full h-full object-cover"
           />

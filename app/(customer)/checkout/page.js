@@ -16,7 +16,7 @@ function ReceiptModal({ order, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 print-area">
-      <div className="bg-white text-black p-6 rounded-lg w-full max-w-sm font-mono text-sm border-2 border-black flex flex-col text-right shadow-2xl relative">
+      <div className="bg-white text-black p-6 rounded-lg w-full max-w-sm font-mono text-sm border-2 border-black flex flex-col text-right shadow-2xl relative receipt-print-zone">
         <button
           type="button"
           onClick={onClose}
@@ -45,8 +45,8 @@ function ReceiptModal({ order, onClose }) {
           {itemsList.map((item, idx) => (
             <div key={idx} className="flex flex-row-reverse justify-between text-xs">
               <span className="w-1/2 text-right">{item.name}</span>
-              <span className="w-1/4 text-center">1</span>
-              <span className="w-1/4 text-left">{item.price} ج.م</span>
+              <span className="w-1/4 text-center">{item.qty || 1}</span>
+              <span className="w-1/4 text-left">{(item.price * (item.qty || 1))} ج.م</span>
             </div>
           ))}
         </div>
@@ -133,7 +133,7 @@ export default function CheckoutPage() {
     playChime();
 
     // Append order to unified list
-    const selectedItemsStr = cartItems.map((item) => item.name).join(' + ');
+    const selectedItemsStr = cartItems.map((item) => `${item.name} (${item.qty || 1})`).join(' + ');
     const newOrderLog = {
       id: randOrder,
       customer: name,
@@ -480,10 +480,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-sm text-on-surface">{item.name}</div>
-                    <div className="text-xs text-on-surface-variant font-semibold">{item.price} ج.م</div>
+                    <div className="text-xs text-on-surface-variant font-semibold">
+                      {item.price} ج.م {item.qty > 1 && `× ${item.qty}`}
+                    </div>
                   </div>
                 </div>
-                <span className="font-bold text-primary text-sm">{item.price} ج.م</span>
+                <span className="font-bold text-primary text-sm">{(item.price * (item.qty || 1))} ج.م</span>
               </div>
             ))}
           </div>
