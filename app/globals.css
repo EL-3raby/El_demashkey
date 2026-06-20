@@ -1,26 +1,274 @@
+/* ─── Google Fonts (must precede all other rules) ──────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap");
+
 @import "tailwindcss";
 
+/* ─── HSL Design Tokens (Material Design 3 Palette) ───────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary */
+  --primary: #8b0000;
+  --primary-container: #610000;
+  --on-primary: #ffffff;
+  --on-primary-container: #ff907f;
+  --primary-fixed: #ffdad4;
+  --primary-fixed-dim: #ffb4a8;
+  --on-primary-fixed: #410000;
+  --on-primary-fixed-variant: #920703;
+
+  /* Secondary */
+  --secondary: #5f5e5a;
+  --secondary-container: #e5e2dc;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #656460;
+  --secondary-fixed: #e5e2dc;
+  --secondary-fixed-dim: #c9c6c1;
+  --on-secondary-fixed: #1c1c18;
+  --on-secondary-fixed-variant: #474743;
+
+  /* Tertiary */
+  --tertiary: #3c2900;
+  --tertiary-container: #583e00;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #d0aa62;
+  --tertiary-fixed: #ffdea5;
+  --tertiary-fixed-dim: #e9c176;
+  --on-tertiary-fixed: #261900;
+  --on-tertiary-fixed-variant: #5d4201;
+
+  /* Error */
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+
+  /* Surface / Background */
+  --surface: #fcf9f8;
+  --surface-dim: #dcd9d9;
+  --surface-bright: #fcf9f8;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f6f3f2;
+  --surface-container: #f0eded;
+  --surface-container-high: #eae7e7;
+  --surface-container-highest: #e5e2e1;
+  --surface-variant: #e5e2e1;
+  --surface-tint: #b52619;
+  --on-surface: #1c1b1b;
+  --on-surface-variant: #5a403c;
+  --background: #fcf9f8;
+  --on-background: #1c1b1b;
+
+  /* Outline */
+  --outline: #8e706b;
+  --outline-variant: #e3beb8;
+
+  /* Inverse */
+  --inverse-surface: #313030;
+  --inverse-on-surface: #f3f0ef;
+  --inverse-primary: #ffb4a8;
 }
 
+/* ─── Tailwind v4 Theme Extension ──────────────────────────────────── */
 @theme inline {
+  /* ── Colors ── */
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+  --color-on-primary-fixed: var(--on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-secondary-fixed-dim: var(--secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--on-secondary-fixed-variant);
+
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+  --color-tertiary-fixed: var(--tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
+  --color-on-tertiary-fixed: var(--on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant: var(--on-tertiary-fixed-variant);
+
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
+
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-variant: var(--surface-variant);
+  --color-surface-tint: var(--surface-tint);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-on-background: var(--on-background);
+
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-on-surface: var(--inverse-on-surface);
+  --color-inverse-primary: var(--inverse-primary);
+
+  /* ── Font Families ── */
+  --font-display-lg: "Tajawal", "Plus Jakarta Sans", sans-serif;
+  --font-display-lg-mobile: "Tajawal", "Plus Jakarta Sans", sans-serif;
+  --font-headline-md: "Tajawal", "Plus Jakarta Sans", sans-serif;
+  --font-body-lg: "Tajawal", "Plus Jakarta Sans", sans-serif;
+  --font-body-md: "Tajawal", "Plus Jakarta Sans", sans-serif;
+  --font-label-sm: "Tajawal", "Plus Jakarta Sans", sans-serif;
+
+  /* ── Border Radius ── */
+  --radius-sm: 0.125rem;
+  --radius-DEFAULT: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+
+  /* ── Spacing ── */
+  --spacing-margin-mobile: 16px;
+  --spacing-gutter: 24px;
+  --spacing-margin-desktop: 40px;
+  --spacing-base: 8px;
+  --spacing-container-max: 1280px;
+
+  /* ── Container Max Width (utility: max-w-container-max) ── */
+  --container-max: 1280px;
+
+  /* ── Animations ── */
+  --animate-fade-in: fadeIn 0.4s ease-out forwards;
+  --animate-slide-up: slideUp 0.5s ease-out forwards;
+  --animate-scale-in: scaleIn 0.3s ease-out forwards;
+  --animate-shimmer: shimmer 2s infinite linear;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Keyframe Animations ──────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────── */
 body {
+  font-family: "Tajawal", "Plus Jakarta Sans", sans-serif;
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--on-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Material Symbols Outlined ────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* ─── Background Pattern (SVG cross pattern) ───────────────────────── */
+.bg-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238e706b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ─── Arch Clip Masks ──────────────────────────────────────────────── */
+.arch-mask {
+  clip-path: ellipse(150% 100% at 50% 100%);
+}
+
+.arch-mask-menu {
+  clip-path: polygon(0 20%, 50% 0, 100% 20%, 100% 100%, 0 100%);
+  border-top-left-radius: 50% 20%;
+  border-top-right-radius: 50% 20%;
+}
+
+/* ─── Oriental Diamond Pattern ─────────────────────────────────────── */
+.oriental-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l20 20-20 20L0 20z' fill='%23e3beb8' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* ─── Hide Scrollbar Utility ───────────────────────────────────────── */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Print Styles ─────────────────────────────────────────────────── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+  }
 }
