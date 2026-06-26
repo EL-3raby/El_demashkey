@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
+import { playErrorBuzz } from '@/utils/audio';
 
 export default function AdminCreateAccounts() {
-  const { adminRole, adminBranch, showToast, branches } = useAppContext();
+  const { adminRole, adminBranch, showToast, branches, staff, setStaff } = useAppContext();
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -12,6 +14,20 @@ export default function AdminCreateAccounts() {
   const [branch, setBranch] = useState(
     adminRole === 'branch_manager' ? adminBranch : 'main'
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    document.title = "إنشاء الحسابات | دمشقي أدمن";
+  }, []);
+
+  useEffect(() => {
+    if (adminRole !== 'super_admin') {
+      playErrorBuzz();
+      showToast('غير مصرح لك بدخول صفحة إنشاء الحسابات.', 'error');
+      router.push('/admin/orders');
+    }
+  }, [adminRole, router, showToast]);
 
   useEffect(() => {
     if (adminRole !== 'branch_manager' && branches && branches.length > 0 && (branch === 'main' || !branch) && !branches.some(b => b.code === 'main')) {
@@ -19,15 +35,21 @@ export default function AdminCreateAccounts() {
     }
   }, [branches, adminRole, branch]);
 
-  const [accounts, setAccounts] = useState([]);
+  if (adminRole !== 'super_admin') {
+    return null;
+  }
 
   const handleCreate = (e) => {
     e.preventDefault();
     if (name && username) {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
       const branchText = branches?.find((b) => b.code === branch)?.name || branch;
       const newAccount = {
+        id: staff.length + 101,
         name: name,
         username: username,
+        role: role,
         roleText:
           role === 'cashier'
             ? 'كاشير'
@@ -35,10 +57,12 @@ export default function AdminCreateAccounts() {
             ? 'مدير فرع'
             : 'مدير عام',
         branchText: branchText,
+        log: 'حساب جديد مضاف حديثاً',
       };
-      setAccounts([...accounts, newAccount]);
+      setStaff([...staff, newAccount]);
       setName('');
       setUsername('');
+      setIsSubmitting(false);
       showToast('تم إنشاء الحساب بنجاح لـ ' + name, 'success');
     } else {
       showToast('يرجى تعبئة كافة الحقول المطلوبة', 'error');
@@ -118,9 +142,10 @@ export default function AdminCreateAccounts() {
           </div>
           <button
             type="submit"
-            className="bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-sm scale-95 active:scale-90 cursor-pointer border-none"
+            disabled={isSubmitting}
+            className="bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-sm scale-95 active:scale-100 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            إنشاء الحساب وتفعيل الصلاحية
+            {isSubmitting ? 'جاري الإنشاء...' : 'إنشاء الحساب وتفعيل الصلاحية'}
           </button>
         </form>
 
@@ -139,7 +164,7 @@ export default function AdminCreateAccounts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-on-surface-variant font-semibold">
-                {accounts.map((acc, idx) => (
+                {staff.map((acc, idx) => (
                   <tr key={idx} className="hover:bg-surface-container-low transition-colors">
                     <td className="p-3 font-bold text-on-surface">{acc.name}</td>
                     <td className="p-3 font-mono">{acc.username}</td>

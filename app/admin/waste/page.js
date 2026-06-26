@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 export default function AdminWastePage() {
@@ -24,6 +24,11 @@ export default function AdminWastePage() {
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('سوء تخزين');
   const [lossValue, setLossValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "مراقب الهالك | دمشقي أدمن";
+  }, []);
 
   // ══════════════════════════════════════════════════════════════════
   // RBAC Security: Cashier Access Denied
@@ -36,7 +41,7 @@ export default function AdminWastePage() {
         </span>
         <h2 className="text-xl font-bold text-error">حظر الوصول</h2>
         <p className="text-sm text-on-surface-variant max-w-md">
-          🔐 تم حجب نظام مراقبة وإهلاك الهالك عن الكاشير.
+          تم حجب نظام مراقبة وإهلاك الهالك عن الكاشير.
         </p>
       </div>
     );
@@ -48,6 +53,8 @@ export default function AdminWastePage() {
   const handleLogWaste = (e) => {
     e.preventDefault();
     if (itemName && quantity && lossValue) {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
       const targetBranch = selectedBranch === 'all' ? (branches[0]?.code || 'main') : selectedBranch;
       const newLog = {
         id: wasteLogs.length + 1,
@@ -62,6 +69,7 @@ export default function AdminWastePage() {
       setItemName('');
       setQuantity('');
       setLossValue('');
+      setIsSubmitting(false);
       showToast('تم تسجيل وإهلاك الهالك المطبخ بنجاح', 'success');
     }
   };
@@ -163,6 +171,8 @@ export default function AdminWastePage() {
               <input
                 type="number"
                 required
+                min="0"
+                step="any"
                 value={lossValue}
                 onChange={(e) => setLossValue(e.target.value)}
                 placeholder="مثال: 150"
@@ -193,9 +203,10 @@ export default function AdminWastePage() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-sm active:scale-90"
+            disabled={isSubmitting}
+            className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-sm scale-95 active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            تسجيل وإهلاك الهالك
+            {isSubmitting ? 'جاري التسجيل...' : 'تسجيل وإهلاك الهالك'}
           </button>
         </form>
 

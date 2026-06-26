@@ -34,6 +34,11 @@ export default function AdminTableLayout() {
   const [newCustomer, setNewCustomer] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'empty', 'occupied', 'reserved'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "توزيع الطاولات | دمشقي أدمن";
+  }, []);
 
   const currentTables = tablesData[selectedBranch] || [];
 
@@ -58,6 +63,8 @@ export default function AdminTableLayout() {
 
   const handleSaveStatus = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const updatedTables = currentTables.map((t) => {
       if (t.id === selectedTable.id) {
         return {
@@ -75,6 +82,7 @@ export default function AdminTableLayout() {
     setTablesData(newTablesData);
 
     setSelectedTable(null);
+    setIsSubmitting(false);
     playTapFeedback();
     showToast(`تم تحديث حالة ${selectedTable.name} بنجاح`, 'success');
   };
@@ -86,9 +94,12 @@ export default function AdminTableLayout() {
     // RBAC Security Lockdown Check
     if (adminRole === 'cashier') {
       playErrorBuzz();
-      showToast('🔐 عذراً، لا تمتلك صلاحية تعديل أو حذف هيكل الصالة!', 'error');
+      showToast('عذراً، لا تمتلك صلاحية تعديل أو حذف هيكل الصالة!', 'error');
       return;
     }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const tableName = e.target.tableNameInput.value.trim();
     const tableCapacity = parseInt(e.target.tableCapacityInput.value) || 2;
@@ -97,7 +108,8 @@ export default function AdminTableLayout() {
       // Avoid duplicate table names in same branch
       if (currentTables.some((t) => t.name === tableName)) {
         playErrorBuzz();
-        showToast('⚠️ اسم الطاولة موجود بالفعل في هذا الفرع!', 'error');
+        showToast('اسم الطاولة موجود بالفعل في هذا الفرع!', 'error');
+        setIsSubmitting(false);
         return;
       }
 
@@ -116,8 +128,11 @@ export default function AdminTableLayout() {
       setTablesData(newTablesData);
 
       e.target.reset();
+      setIsSubmitting(false);
       playTapFeedback();
       showToast(`تمت إضافة ${tableName} بنجاح`, 'success');
+    } else {
+      setIsSubmitting(false);
     }
   };
 
@@ -128,7 +143,7 @@ export default function AdminTableLayout() {
     // RBAC Security Lockdown Check
     if (adminRole === 'cashier') {
       playErrorBuzz();
-      showToast('🔐 عذراً، لا تمتلك صلاحية تعديل أو حذف هيكل الصالة!', 'error');
+      showToast('عذراً، لا تمتلك صلاحية تعديل أو حذف هيكل الصالة!', 'error');
       return;
     }
 
@@ -447,9 +462,10 @@ export default function AdminTableLayout() {
 
               <button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-90 cursor-pointer border-none"
+                disabled={isSubmitting}
+                className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-100 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                تأكيد وإضافة الطاولة
+                {isSubmitting ? 'جاري الإضافة...' : 'تأكيد وإضافة الطاولة'}
               </button>
             </form>
           ) : (
@@ -486,9 +502,9 @@ export default function AdminTableLayout() {
                 onChange={(e) => setNewStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-outline-variant/60 rounded text-sm bg-surface outline-none focus:border-primary font-bold text-right cursor-pointer"
               >
-                <option value="empty">فارغة (🟢 Green)</option>
-                <option value="reserved">محجوزة (🟡 Amber)</option>
-                <option value="occupied">مشغولة حالياً (🔴 Primary Red)</option>
+                <option value="empty">فارغة (اللون الأخضر)</option>
+                <option value="reserved">محجوزة (اللون الأصفر)</option>
+                <option value="occupied">مشغولة حالياً (اللون الأحمر)</option>
               </select>
             </div>
 
@@ -563,9 +579,10 @@ export default function AdminTableLayout() {
               </button>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none"
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                حفظ التغييرات
+                {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
               </button>
             </div>
           </form>

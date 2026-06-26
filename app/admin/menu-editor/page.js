@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
+import { playErrorBuzz } from '@/utils/audio';
 
 // Stock badge helper
 const renderStockBadge = (level) => {
@@ -27,10 +29,11 @@ const renderStockBadge = (level) => {
 };
 
 export default function AdminMenuEditor() {
-  const { showToast, menuCatalog, setMenuCatalog } = useAppContext();
+  const { showToast, menuCatalog, setMenuCatalog, adminRole } = useAppContext();
 
   const menuItems = menuCatalog;
   const setMenuItems = setMenuCatalog;
+  const router = useRouter();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
@@ -40,6 +43,23 @@ export default function AdminMenuEditor() {
     'https://images.unsplash.com/photo-1644704180697-46280a1557a3?q=80&w=600'
   );
   const [newStock, setNewStock] = useState('high');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "تعديل قائمة الطعام | دمشقي أدمن";
+  }, []);
+
+  useEffect(() => {
+    if (adminRole === 'cashier') {
+      playErrorBuzz();
+      showToast('غير مصرح لك بدخول صفحة إدارة المنيو.', 'error');
+      router.push('/admin/orders');
+    }
+  }, [adminRole, router, showToast]);
+
+  if (adminRole === 'cashier') {
+    return null;
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -67,6 +87,8 @@ export default function AdminMenuEditor() {
   const handleAddItem = (e) => {
     e.preventDefault();
     if (newName && newPrice) {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
       const newItem = {
         id: menuItems.length + 1,
         name: newName,
@@ -83,6 +105,7 @@ export default function AdminMenuEditor() {
       setNewImg('https://images.unsplash.com/photo-1644704180697-46280a1557a3?q=80&w=600');
       setNewStock('high');
       setShowAddForm(false);
+      setIsSubmitting(false);
       showToast('تم إضافة الصنف ' + newName + ' بنجاح', 'success');
     }
   };
@@ -126,6 +149,8 @@ export default function AdminMenuEditor() {
               <input
                 type="number"
                 required
+                min="0"
+                step="any"
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
                 className="w-full px-3 py-2 border border-outline-variant/60 rounded text-sm bg-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary text-right font-body-md"
@@ -182,11 +207,12 @@ export default function AdminMenuEditor() {
             >
               إلغاء
             </button>
-            <button
+             <button
               type="submit"
-              className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs transition-all cursor-pointer"
+              disabled={isSubmitting}
+              className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              حفظ الصنف
+              {isSubmitting ? 'جاري الحفظ...' : 'حفظ الصنف'}
             </button>
           </div>
         </form>
@@ -211,7 +237,7 @@ export default function AdminMenuEditor() {
               {menuItems.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="p-8 text-center text-on-surface-variant font-bold">
-                    📦 قائمة الطعام فارغة، يرجى إضافة وجبات جديدة
+                    <span className="material-symbols-outlined text-xl inline-block align-middle ml-1">inventory_2</span> قائمة الطعام فارغة، يرجى إضافة وجبات جديدة
                   </td>
                 </tr>
               ) : (

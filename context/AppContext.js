@@ -16,6 +16,13 @@ const INITIAL_WASTE_LOGS = [];
 /** Seed past shift reconciliation records */
 const INITIAL_PAST_SHIFTS = [];
 
+/** Seed initial staff directory list */
+const INITIAL_STAFF = [
+  { id: 101, name: 'أيمن الدمشقي', username: 'ayman@demashki.com', role: 'branch_manager', roleText: 'مدير فرع', branchText: 'الفرع الرئيسي', log: 'نشط في النظام' },
+  { id: 102, name: 'باسل محمود', username: 'basel@demashki.com', role: 'branch_manager', roleText: 'مدير فرع', branchText: 'فرع الراهبات', log: 'نشط في النظام' },
+  { id: 103, name: 'ياسر كاشير', username: 'yasser@demashki.com', role: 'cashier', roleText: 'كاشير', branchText: 'الفرع الرئيسي', log: 'نشط في النظام' },
+];
+
 /** Seed branch table layout maps */
 const INITIAL_TABLES_DATA = {
   main: [
@@ -62,6 +69,44 @@ const INITIAL_BRANCHES = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Safe localStorage helper
+// Strips base64 blobs and catches QuotaExceededError gracefully.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Serialise and persist a value to localStorage.
+ * – Catches QuotaExceededError so the app never crashes on a full storage.
+ * – Accepts an optional `transform` function to sanitise the value before
+ *   serialisation (e.g. stripping large binary fields).
+ */
+function safePersist(key, value, transform) {
+  try {
+    const payload = transform ? transform(value) : value;
+    localStorage.setItem(key, JSON.stringify(payload));
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      console.warn(
+        `[AppContext] localStorage quota exceeded for key "${key}". ` +
+        'Data was NOT saved. Consider clearing browser storage.'
+      );
+    } else {
+      console.error(`[AppContext] Failed to persist "${key}":`, e);
+    }
+  }
+}
+
+/**
+ * Strip bulky base64 screenshot blobs before persisting orders.
+ * Also caps the list to the 200 most recent entries.
+ */
+function sanitiseOrders(orders) {
+  return orders.slice(0, 200).map((o) => {
+    const { screenshot, ...rest } = o; // eslint-disable-line no-unused-vars
+    return rest;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Context
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -88,6 +133,7 @@ export function AppProvider({ children }) {
   const [tablesData, setTablesData] = useState(INITIAL_TABLES_DATA);
   const [branches, setBranches] = useState(INITIAL_BRANCHES);
   const [menuCatalog, setMenuCatalog] = useState([]);
+  const [staff, setStaff] = useState([]);
 
   // ── Mounted State ──
   const [isMounted, setIsMounted] = useState(false);
@@ -98,7 +144,7 @@ export function AppProvider({ children }) {
   // ── Client-Side Hydration: Restore all states from localStorage ONCE on mount ──
   useEffect(() => {
     // Only runs on client after mount (SSR-safe)
-    const mockCleared = localStorage.getItem('demashki_mock_cleared_v5');
+    const mockCleared = localStorage.getItem('demashki_mock_cleared_v6');
     if (!mockCleared) {
       localStorage.removeItem('demashki_orders');
       localStorage.removeItem('demashki_waste');
@@ -109,7 +155,8 @@ export function AppProvider({ children }) {
       localStorage.removeItem('demashki_tables_data');
       localStorage.removeItem('demashki_branches'); // Reset branches to clean INITIAL_BRANCHES
       localStorage.removeItem('demashki_menu_catalog'); // Reset menu catalog
-      localStorage.setItem('demashki_mock_cleared_v5', 'true');
+      localStorage.removeItem('demashki_staff'); // Clear staff accounts
+      localStorage.setItem('demashki_mock_cleared_v6', 'true');
       // Trigger a page refresh to force-initialize everything to the clean slate
       window.location.reload();
       return;
@@ -188,59 +235,67 @@ export function AppProvider({ children }) {
       }
     }
 
+    const storedStaff = localStorage.getItem('demashki_staff');
+    if (storedStaff) {
+      try {
+        setStaff(JSON.parse(storedStaff));
+      } catch (e) {
+        console.error('Error parsing staff from localStorage', e);
+      }
+    } else {
+      setStaff(INITIAL_STAFF);
+    }
+
     setIsMounted(true);
   }, []);
 
   // ── Persist auth state changes to localStorage ──
   useEffect(() => {
     if (isMounted) {
-      localStorage.setItem('demashki_auth', isAuthenticated ? 'true' : 'false');
-      localStorage.setItem('demashki_role', adminRole);
-      localStorage.setItem('demashki_branch', adminBranch);
-      localStorage.setItem('demashki_user', adminUser);
+      try {
+        localStorage.setItem('demashki_auth', isAuthenticated ? 'true' : 'false');
+        localStorage.setItem('demashki_role', adminRole);
+        localStorage.setItem('demashki_branch', adminBranch);
+        localStorage.setItem('demashki_user', adminUser);
+      } catch (e) {
+        console.warn('[AppContext] Could not persist auth state:', e);
+      }
     }
   }, [isAuthenticated, adminRole, adminBranch, adminUser, isMounted]);
 
   // ── Persist branches state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_branches', JSON.stringify(branches));
-    }
+    if (isMounted) safePersist('demashki_branches', branches);
   }, [branches, isMounted]);
 
   // ── Persist menu catalog state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_menu', JSON.stringify(menuCatalog));
-    }
+    if (isMounted) safePersist('demashki_menu', menuCatalog);
   }, [menuCatalog, isMounted]);
 
-  // ── Persist orders state changes to localStorage ──
+  // ── Persist staff state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_orders', JSON.stringify(orders));
-    }
+    if (isMounted) safePersist('demashki_staff', staff);
+  }, [staff, isMounted]);
+
+  // ── Persist orders — strip base64 screenshots, cap at 200 entries ──
+  useEffect(() => {
+    if (isMounted) safePersist('demashki_orders', orders, sanitiseOrders);
   }, [orders, isMounted]);
 
   // ── Persist waste state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_waste', JSON.stringify(wasteLogs));
-    }
+    if (isMounted) safePersist('demashki_waste', wasteLogs);
   }, [wasteLogs, isMounted]);
 
   // ── Persist past shifts state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_shifts', JSON.stringify(pastShifts));
-    }
+    if (isMounted) safePersist('demashki_shifts', pastShifts);
   }, [pastShifts, isMounted]);
 
   // ── Persist tables state changes to localStorage ──
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('demashki_tables', JSON.stringify(tablesData));
-    }
+    if (isMounted) safePersist('demashki_tables', tablesData);
   }, [tablesData, isMounted]);
 
   // ── Auto-dismiss toast after 3 seconds ──
@@ -341,6 +396,9 @@ export function AppProvider({ children }) {
     setMenuCatalog,
     menuItems: menuCatalog,
     setMenuItems: setMenuCatalog,
+    staff,
+    setStaff,
+    isMounted,
 
     // Toast
     toast,

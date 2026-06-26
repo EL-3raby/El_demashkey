@@ -30,6 +30,11 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('super_admin');
   const [branch, setBranch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "تسجيل دخول الإدارة | دمشقي";
+  }, []);
 
   useEffect(() => {
     if (branches && branches.length > 0 && !branch) {
@@ -46,6 +51,8 @@ export default function AdminLoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     if (username && password) {
       // Determine effective branch (super_admin sees all branches)
@@ -74,6 +81,7 @@ export default function AdminLoginPage() {
       router.push('/admin');
     } else {
       showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
+      setIsSubmitting(false);
     }
   };
 
@@ -166,9 +174,10 @@ export default function AdminLoginPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="mt-4 w-full bg-primary text-on-primary py-3.5 rounded-full font-bold hover:bg-primary-container transition-colors shadow-md flex items-center justify-center gap-2 active:scale-90 transition-transform"
+            disabled={isSubmitting}
+            className="mt-4 w-full bg-primary text-on-primary py-3.5 rounded-full font-bold hover:bg-primary-container transition-colors shadow-md flex items-center justify-center gap-2 scale-95 active:scale-100 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>دخول لوحة التحكم</span>
+            <span>{isSubmitting ? 'جاري التحقق...' : 'دخول لوحة التحكم'}</span>
             <span className="material-symbols-outlined text-lg">login</span>
           </button>
         </form>

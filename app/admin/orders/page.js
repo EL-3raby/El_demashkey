@@ -14,6 +14,10 @@ export default function AdminOrdersPage() {
     branches,
   } = useAppContext();
 
+  useEffect(() => {
+    document.title = "الطلبات النشطة | دمشقي أدمن";
+  }, []);
+
   const currentRole = adminRole;
   const activeBranch = adminBranch;
 
@@ -41,7 +45,10 @@ export default function AdminOrdersPage() {
   const formatTime = (seconds) => {
     if (seconds <= 0) {
       return (
-        <span className="text-error font-bold animate-pulse">⚠️ متأخر!</span>
+        <span className="text-error font-bold animate-pulse flex items-center justify-center gap-1">
+          <span className="material-symbols-outlined text-sm font-bold">warning</span>
+          متأخر!
+        </span>
       );
     }
     const mins = Math.floor(seconds / 60);
@@ -460,7 +467,7 @@ export default function AdminOrdersPage() {
               </div>
               <div className="bg-[#d9fdd3] text-black p-3 rounded-lg shadow-sm text-xs text-right max-w-[85%] self-end mt-4 leading-relaxed">
                 <strong className="block text-primary text-[10px] mb-1">
-                  مطعم دمشقي الشامي 🌟
+                  مطعم دمشقي الشامي
                 </strong>
                 مرحباً {selectedVodafoneOrder.customer}، تم تأكيد عملية الدفع
                 فودافون كاش لطلبك #{selectedVodafoneOrder.id} بقيمة{' '}

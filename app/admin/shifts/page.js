@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 export default function AdminShifts() {
@@ -25,6 +25,11 @@ export default function AdminShifts() {
   const [isShiftJustClosed, setIsShiftJustClosed] = useState(false);
   const [discrepancy, setDiscrepancy] = useState(0);
   const [closingSummary, setClosingSummary] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "إدارة الورديات | دمشقي أدمن";
+  }, []);
 
   // Dynamic Shift Reconciliation Engine: slice active branch orders
   const expectedSales = orders
@@ -36,6 +41,8 @@ export default function AdminShifts() {
 
   const handleOpenShift = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const startCash = parseFloat(e.target.openingCashInput.value) || 0;
     setShiftState({
       isOpen: true,
@@ -49,11 +56,14 @@ export default function AdminShifts() {
     setIsShiftJustClosed(false);
     setClosingSummary(null);
     setClosingCashInput('');
+    setIsSubmitting(false);
     showToast('تم فتح وردية صندوق جديدة بنجاح', 'success');
   };
 
   const handleCloseShift = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const counted = parseFloat(closingCashInput) || 0;
     const expectedTotal = shiftState.openingCash + expectedSales;
     const diff = counted - expectedTotal;
@@ -81,6 +91,7 @@ export default function AdminShifts() {
     setPastShifts([newPastShift, ...pastShifts]);
     setShiftState({ ...shiftState, isOpen: false });
     setIsShiftJustClosed(true);
+    setIsSubmitting(false);
 
     if (diff === 0) {
       showToast('تم إغلاق الوردية بمطابقة كاش كاملة!', 'success');
@@ -142,6 +153,7 @@ export default function AdminShifts() {
                   <input
                     type="number"
                     required
+                    min="0"
                     value={closingCashInput}
                     onChange={(e) => setClosingCashInput(e.target.value)}
                     placeholder="أدخل المبلغ بعد العد اليدوي"
@@ -150,9 +162,10 @@ export default function AdminShifts() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-90 transition-transform cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-100 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  إغلاق الوردية ومطابقة الكاش
+                  {isSubmitting ? 'جاري الحفظ...' : 'إغلاق الوردية ومطابقة الكاش'}
                 </button>
               </form>
             </div>
@@ -197,9 +210,9 @@ export default function AdminShifts() {
                     <span className="material-symbols-outlined text-base">
                       {closingSummary.diff === 0 ? 'check_circle' : 'warning'}
                     </span>
-                    {closingSummary.diff === 0 && '✅ الكاش متطابق تماماً'}
-                    {closingSummary.diff < 0 && `⚠️ عجز كاش بقيمة ${Math.abs(closingSummary.diff)} ج.م`}
-                    {closingSummary.diff > 0 && `ℹ️ زيادة كاش بقيمة ${closingSummary.diff} ج.م`}
+                    {closingSummary.diff === 0 && 'الكاش متطابق تماماً'}
+                    {closingSummary.diff < 0 && `عجز كاش بقيمة ${Math.abs(closingSummary.diff)} ج.م`}
+                    {closingSummary.diff > 0 && `زيادة كاش بقيمة ${closingSummary.diff} ج.م`}
                   </div>
                 </div>
               )}
@@ -213,15 +226,17 @@ export default function AdminShifts() {
                     type="number"
                     name="openingCashInput"
                     defaultValue="1000"
+                    min="0"
                     placeholder="مثال: 1000"
                     className="w-full px-3 py-2 border border-outline-variant/60 rounded bg-surface text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-right"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-90 transition-transform cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-2 rounded transition-all shadow-sm text-sm scale-95 active:scale-100 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  افتتاح وردية جديدة
+                  {isSubmitting ? 'جاري البدء...' : 'افتتاح وردية جديدة'}
                 </button>
               </form>
             </div>

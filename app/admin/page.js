@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
+import { playErrorBuzz } from '@/utils/audio';
 
 export default function AdminDashboardPage() {
   const {
@@ -12,12 +14,26 @@ export default function AdminDashboardPage() {
     wasteLogs,
     pastShifts,
     branches,
+    showToast,
   } = useAppContext();
 
   const currentRole = adminRole;
   const activeBranch = adminBranch;
+  const router = useRouter();
 
   const [showReportModal, setShowReportModal] = useState(false);
+
+  useEffect(() => {
+    document.title = "لوحة الإحصائيات | دمشقي أدمن";
+  }, []);
+
+  useEffect(() => {
+    if (adminRole === 'cashier') {
+      playErrorBuzz();
+      showToast('غير مصرح لك بدخول لوحة الإحصائيات والبيانات المالية الحساسة.', 'error');
+      router.push('/admin/orders');
+    }
+  }, [adminRole, router, showToast]);
 
   const handleExportCSV = () => {
     const filteredOrders = orders.filter(
@@ -55,19 +71,7 @@ export default function AdminDashboardPage() {
   // RBAC Security: Strict Financial Lockdown for Cashier
   // ══════════════════════════════════════════════════════════════════
   if (currentRole === 'cashier') {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 bg-surface-container-low rounded-2xl border border-error/20 text-center animate-fade-in gap-4">
-        <span className="material-symbols-outlined text-6xl text-error">
-          security
-        </span>
-        <h2 className="text-xl font-bold text-error">
-          حظر الوصول للبيانات المالية
-        </h2>
-        <p className="text-sm text-on-surface-variant max-w-md">
-          🔐 تم حجب البيانات الإحصائية والمالية الحساسة عن حساب الكاشير.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -229,7 +233,7 @@ export default function AdminDashboardPage() {
             onClick={handleExportCSV}
             className="bg-secondary-container hover:bg-outline-variant/30 text-primary py-2 px-4 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-90"
           >
-            تصدير التقرير (CSV) 📊
+            تصدير التقرير (CSV)
           </button>
 
           {/* Branch Filter (Super Admin = dropdown, Branch Manager = static badge) */}
@@ -469,7 +473,7 @@ export default function AdminDashboardPage() {
 
           {totalItemsSold === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant gap-2 select-none">
-              <span className="text-4xl">📦</span>
+              <span className="material-symbols-outlined text-4xl text-on-surface-variant">inventory_2</span>
               <span className="text-sm font-bold text-on-surface-variant/80">
                 لا توجد مبيعات مسجلة اليوم بعد
               </span>

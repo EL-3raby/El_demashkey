@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { playTapFeedback, playErrorBuzz, playChime } from '@/utils/audio';
 
@@ -15,10 +16,29 @@ export default function AdminBranchesPage() {
     setBranches,
   } = useAppContext();
 
+  const router = useRouter();
+
   // Modals Visibility State
   const [selectedShiftBranch, setSelectedShiftBranch] = useState(null);
   const [selectedAssetBranch, setSelectedAssetBranch] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "إدارة الفروع | دمشقي أدمن";
+  }, []);
+
+  useEffect(() => {
+    if (adminRole !== 'super_admin') {
+      playErrorBuzz();
+      showToast('غير مصرح لك بدخول صفحة إدارة الفروع.', 'error');
+      router.push('/admin/orders');
+    }
+  }, [adminRole, router, showToast]);
+
+  if (adminRole !== 'super_admin') {
+    return null;
+  }
 
   // Forms Input State
   const [declaredCash, setDeclaredCash] = useState('');
@@ -42,7 +62,7 @@ export default function AdminBranchesPage() {
         // Force background chime and alert
         playChime();
         showToast(
-          `🔥 تنبيه تشغيل: طلب جديد وارد لفرع (${
+          `تنبيه تشغيل: طلب جديد وارد لفرع (${
             newOrder.branch === 'main' ? 'الرئيسي' : 'الراهبات'
           }) - العميل: ${newOrder.customer} بقيمة ${newOrder.total} ج.م`,
           'success'
@@ -72,9 +92,12 @@ export default function AdminBranchesPage() {
     e.preventDefault();
     if (!editManager.trim() || !editTables) {
       playErrorBuzz();
-      showToast('⚠️ الرجاء ملء جميع حقول الأصول بشكل صحيح', 'error');
+      showToast('الرجاء ملء جميع حقول الأصول بشكل صحيح', 'error');
       return;
     }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const updatedBranches = branches.map((b) => {
       if (b.code === selectedAssetBranch.code) {
@@ -89,8 +112,9 @@ export default function AdminBranchesPage() {
 
     setBranches(updatedBranches);
     setSelectedAssetBranch(null);
+    setIsSubmitting(false);
     playTapFeedback();
-    showToast('✅ تم تحديث أصول الفرع بنجاح!', 'success');
+    showToast('تم تحديث أصول الفرع بنجاح!', 'success');
   };
 
   // Handle Shift Closure / Cash Drop Reconciliation
@@ -99,9 +123,12 @@ export default function AdminBranchesPage() {
     const counted = parseFloat(declaredCash);
     if (isNaN(counted) || counted < 0) {
       playErrorBuzz();
-      showToast('⚠️ الرجاء إدخال مبلغ عهدة فعلي صحيح', 'error');
+      showToast('الرجاء إدخال مبلغ عهدة فعلي صحيح', 'error');
       return;
     }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const b = selectedShiftBranch;
     // Calculate expected sales from completed/active orders of this branch
@@ -127,14 +154,15 @@ export default function AdminBranchesPage() {
 
     setPastShifts([newPastShift, ...pastShifts]);
     setSelectedShiftBranch(null);
+    setIsSubmitting(false);
     playTapFeedback();
 
     if (diff === 0) {
-      showToast('✅ تم إغلاق الوردية ومطابقة صندوق الكاش بنجاح تام!', 'success');
+      showToast('تم إغلاق الوردية ومطابقة صندوق الكاش بنجاح تام!', 'success');
     } else if (diff > 0) {
-      showToast(`ℹ️ تم إغلاق الوردية بزيادة مالية قدرها +${diff} ج.م`, 'success');
+      showToast(`تم إغلاق الوردية بزيادة مالية قدرها +${diff} ج.م`, 'success');
     } else {
-      showToast(`⚠️ تم تسجيل عجز مالي في الخزينة بقيمة ${diff} ج.م`, 'error');
+      showToast(`تم تسجيل عجز مالي في الخزينة بقيمة ${diff} ج.م`, 'error');
     }
   };
 
@@ -143,9 +171,12 @@ export default function AdminBranchesPage() {
     e.preventDefault();
     if (!createName.trim() || !createLocation.trim() || !createManager.trim() || !createTables) {
       playErrorBuzz();
-      showToast('⚠️ الرجاء ملء جميع الحقول بشكل صحيح', 'error');
+      showToast('الرجاء ملء جميع الحقول بشكل صحيح', 'error');
       return;
     }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const newCode = 'branch_' + Math.random().toString(36).substring(2, 7);
     const newBranch = {
@@ -167,8 +198,9 @@ export default function AdminBranchesPage() {
     setCreateTables('');
 
     setShowCreateModal(false);
+    setIsSubmitting(false);
     playTapFeedback();
-    showToast("🎉 تم تأسيس وإضافة الفرع الجديد بنجاح!", "success");
+    showToast("تم تأسيس وإضافة الفرع الجديد بنجاح!", "success");
   };
 
   return (
@@ -329,9 +361,10 @@ export default function AdminBranchesPage() {
               </div>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-xs cursor-pointer border-none"
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary-container text-on-primary font-bold py-2.5 rounded transition-all shadow-sm text-xs cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                تأكيد مطابقة الإغلاق المالي وتسجيل الحركة
+                {isSubmitting ? 'جاري الحفظ...' : 'تأكيد مطابقة الإغلاق المالي وتسجيل الحركة'}
               </button>
             </form>
 
@@ -447,9 +480,10 @@ export default function AdminBranchesPage() {
               </button>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none"
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                حفظ تعديلات الأصول
+                {isSubmitting ? 'جاري الحفظ...' : 'حفظ تعديلات الأصول'}
               </button>
             </div>
           </form>
@@ -540,9 +574,10 @@ export default function AdminBranchesPage() {
               </button>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none"
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded font-bold text-xs cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                تأسيس وإضافة الفرع
+                {isSubmitting ? 'جاري الإضافة...' : 'تأسيس وإضافة الفرع'}
               </button>
             </div>
           </form>

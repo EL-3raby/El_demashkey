@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppContext } from '@/context/AppContext';
 
@@ -110,6 +110,11 @@ export default function CheckoutPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [orderNum, setOrderNum] = useState(0);
   const [selectedPrintOrder, setSelectedPrintOrder] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = "إتمام الطلب | مطعم دمشقي";
+  }, []);
 
   const deliveryFee = deliveryMethod === 'delivery' ? 30 : 0;
   const finalTotal = cartTotal + deliveryFee;
@@ -127,9 +132,10 @@ export default function CheckoutPage() {
 
   const handleCheckout = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const randOrder = Math.floor(100 + Math.random() * 900);
     setOrderNum(randOrder);
-    setIsSubmitted(true);
 
     // Synthesize live audio chime alert
     playChime();
@@ -150,6 +156,8 @@ export default function CheckoutPage() {
       date: new Date().toLocaleString('ar-EG'),
     };
     setOrders([newOrderLog, ...orders]);
+    setIsSubmitted(true);
+    setIsSubmitting(false);
 
     showToast('تم استلام طلبك بنجاح! رقم الطلب: #' + randOrder, 'success');
   };
@@ -157,6 +165,7 @@ export default function CheckoutPage() {
   const handleSuccessClose = () => {
     clearCart();
     setIsSubmitted(false);
+    setIsSubmitting(false);
   };
 
   if (isSubmitted) {
@@ -291,6 +300,8 @@ export default function CheckoutPage() {
                 <input
                   type="tel"
                   required
+                  pattern="[0-9]+"
+                  inputMode="numeric"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="مثال: 01012345678"
@@ -461,9 +472,10 @@ export default function CheckoutPage() {
 
           <button
             type="submit"
-            className="w-full mt-4 bg-primary text-on-primary py-3.5 rounded-full font-bold hover:bg-primary-container transition-colors shadow-sm text-center scale-95 active:scale-90 transition-transform cursor-pointer font-sans"
+            disabled={isSubmitting}
+            className="w-full mt-4 bg-primary text-on-primary py-3.5 rounded-full font-bold hover:bg-primary-container transition-colors shadow-sm text-center scale-95 active:scale-100 transition-transform cursor-pointer font-sans disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            تأكيد الطلب والدفع ({finalTotal} ج.م)
+            {isSubmitting ? 'جاري تأكيد الطلب...' : `تأكيد الطلب والدفع (${finalTotal} ج.م)`}
           </button>
         </form>
 

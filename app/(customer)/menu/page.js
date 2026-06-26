@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 // Stock badge helper
@@ -28,6 +29,10 @@ const renderStockBadge = (level) => {
 export default function MenuPage() {
   const { addToCart, showToast, menuCatalog } = useAppContext();
 
+  useEffect(() => {
+    document.title = "قائمة الطعام | مطعم دمشقي";
+  }, []);
+
   const menuItems = (menuCatalog || []).filter((item) => item.active !== false);
 
   return (
@@ -36,7 +41,7 @@ export default function MenuPage() {
       
       {menuItems.length === 0 ? (
         <div className="text-center py-16 text-on-surface-variant font-bold bg-surface-container-lowest rounded-xl border border-dashed border-outline-variant/30 max-w-md mx-auto animate-fade-in flex flex-col items-center justify-center gap-2 select-none">
-          <span className="text-4xl">📦</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant">inventory_2</span>
           <span>قائمة الطعام فارغة، يرجى إضافة وجبات جديدة</span>
         </div>
       ) : (
