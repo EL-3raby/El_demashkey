@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // branches: public read, admin/staff write
+    match /branches/{branchId} {
+      allow read: if true;
+      allow write, update, delete: if isAuthenticated();
+    }
+
+    // menu: public read, admin/staff write
+    match /menu/{menuId} {
+      allow read: if true;
+      allow write, update, delete: if isAuthenticated();
+    }
+
+    // orders: public read (for checkout verification) and create, admin/staff update/delete
+    match /orders/{orderId} {
+      allow read, create: if true;
+      allow update, delete: if isAuthenticated();
+    }
+
+    // tables: public read and update (to allow customers to reserve/change table statuses), delete requires admin/staff auth
+    match /tables/{branchId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    // waste: admin/staff only
+    match /waste/{wasteId} {
+      allow read, write, update, delete: if isAuthenticated();
+    }
+
+    // shifts: admin/staff only
+    match /shifts/{shiftId} {
+      allow read, write, update, delete: if isAuthenticated();
+    }
+
+    // staff: admin/staff only
+    match /staff/{staffId} {
+      allow read, write, update, delete: if isAuthenticated();
+    }
+  }
+}

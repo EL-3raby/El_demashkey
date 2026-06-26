@@ -130,11 +130,15 @@ export default function AdminSidebar() {
     setAdminRole('super_admin');
     setAdminBranch('all');
 
-    // Flush localStorage
+    // Flush storage
     localStorage.removeItem('demashki_auth');
     localStorage.removeItem('demashki_role');
     localStorage.removeItem('demashki_branch');
     localStorage.removeItem('demashki_user');
+    sessionStorage.removeItem('demashki_auth');
+    sessionStorage.removeItem('demashki_role');
+    sessionStorage.removeItem('demashki_branch');
+    sessionStorage.removeItem('demashki_user');
 
     showToast('تم تسجيل الخروج بنجاح', 'warning');
     router.push('/admin/login');

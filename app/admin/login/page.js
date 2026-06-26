@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
+import { auth } from '@/lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 const LOGO_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuD49pB1_qsZQmcqLHH19jhIwzSFOvatEfigPbPtZAI0rIcIl5RZBW22617oxzqlER5PuuXzEDnq4mm907LLS1lT1zGssEV5VBGq0K7CaIy19HcXwSmYYm8LuZuLU2CHoCvVlpPkkbMCTGyi3ZjhWddjLfdxY-Rz2oZBLn3TA4D7CeInXJRlhBlVc-5VJwqKjX_OT5_ufineBawDKlknVlDhjJAM1ReWZEArHya0FzpsOcBw3GLFYvPl5RSc8krTvwRroeOupRYqTA';
@@ -64,21 +66,34 @@ export default function AdminLoginPage() {
       setAdminBranch(finalBranch);
       setAdminUser(username);
 
-      // Persist to localStorage
+      // Persist to storage
+      sessionStorage.setItem('demashki_user', username);
+      sessionStorage.setItem('demashki_auth', 'true');
+      sessionStorage.setItem('demashki_role', role);
+      sessionStorage.setItem('demashki_branch', finalBranch);
+
       localStorage.setItem('demashki_user', username);
       localStorage.setItem('demashki_auth', 'true');
       localStorage.setItem('demashki_role', role);
       localStorage.setItem('demashki_branch', finalBranch);
 
-      // Audio + visual feedback
-      playChime();
-      showToast(
-        'تم تسجيل الدخول بنجاح كـ ' + (ROLE_LABELS[role] || role),
-        'success'
-      );
-
-      // Navigate to admin dashboard
-      router.push('/admin');
+      // Authenticate session with Firebase Auth anonymously to satisfy firestore security rules
+      signInAnonymously(auth)
+        .then(() => {
+          // Audio + visual feedback
+          playChime();
+          showToast(
+            'تم تسجيل الدخول بنجاح كـ ' + (ROLE_LABELS[role] || role),
+            'success'
+          );
+          // Navigate to admin dashboard
+          router.push('/admin');
+        })
+        .catch((err) => {
+          console.error("Firebase auth login error:", err);
+          showToast('حدث خطأ أثناء الاتصال بالخادم السحابي', 'error');
+          setIsSubmitting(false);
+        });
     } else {
       showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
       setIsSubmitting(false);

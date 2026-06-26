@@ -357,15 +357,21 @@ export default function ReservationForm() {
       date: new Date().toLocaleString('ar-EG'),
     };
 
-    // Auto-allocate table
-    const newTablesData = { ...tablesData };
-    const branchTables = newTablesData[branch] || [];
-    const firstEmptyTable = branchTables.find((t) => t.status === 'empty');
-    if (firstEmptyTable) {
-      firstEmptyTable.status = 'reserved';
-      firstEmptyTable.customer = name;
-      firstEmptyTable.notes = `حجز إلكتروني: ${date} في ${time} (${guests} أفراد)`;
-      setTablesData(newTablesData);
+    // Auto-allocate table (React Safe Deep-Copy Mutation)
+    const branchTables = tablesData[branch] || [];
+    const tableIndex = branchTables.findIndex((t) => t.status === 'empty');
+    
+    if (tableIndex !== -1) {
+      setTablesData((prev) => {
+        const updatedBranchTables = [...prev[branch]];
+        updatedBranchTables[tableIndex] = {
+          ...updatedBranchTables[tableIndex],
+          status: 'reserved',
+          customer: name,
+          notes: `حجز إلكتروني: ${date} في ${time} (${guests} أفراد)`
+        };
+        return { ...prev, [branch]: updatedBranchTables };
+      });
     }
 
     setOrders([newOrderLog, ...orders]);

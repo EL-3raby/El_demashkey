@@ -2,6 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { playChime } from '@/utils/audio';
+import { db, auth } from '@/lib/firebase';
+import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Initial Data Matrices
@@ -120,20 +123,20 @@ export function AppProvider({ children }) {
   // ── Cart ──
   const [cartItems, setCartItems] = useState([]);
 
-  // ── Authentication (lazy-init from localStorage) ──
+  // ── Authentication (lazy-init from sessionStorage / localStorage) ──
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminRole, setAdminRole] = useState('super_admin');
   const [adminBranch, setAdminBranch] = useState('all');
   const [adminUser, setAdminUser] = useState('');
 
-  // ── ERP Data Matrices ──
-  const [orders, setOrders] = useState([]);
-  const [wasteLogs, setWasteLogs] = useState([]);
-  const [pastShifts, setPastShifts] = useState([]);
-  const [tablesData, setTablesData] = useState(INITIAL_TABLES_DATA);
-  const [branches, setBranches] = useState(INITIAL_BRANCHES);
-  const [menuCatalog, setMenuCatalog] = useState([]);
-  const [staff, setStaff] = useState([]);
+  // ── ERP Data Matrices (react state driven by Firestore) ──
+  const [orders, setOrdersState] = useState([]);
+  const [wasteLogs, setWasteLogsState] = useState([]);
+  const [pastShifts, setPastShiftsState] = useState([]);
+  const [tablesData, setTablesDataState] = useState(INITIAL_TABLES_DATA);
+  const [branches, setBranchesState] = useState(INITIAL_BRANCHES);
+  const [menuCatalog, setMenuCatalogState] = useState([]);
+  const [staff, setStaffState] = useState([]);
 
   // ── Mounted State ──
   const [isMounted, setIsMounted] = useState(false);
@@ -141,34 +144,90 @@ export function AppProvider({ children }) {
   // ── Toast Notification State ──
   const [toast, setToast] = useState({ message: '', type: '', visible: false });
 
-  // ── Client-Side Hydration: Restore all states from localStorage ONCE on mount ──
-  useEffect(() => {
-    // Only runs on client after mount (SSR-safe)
-    const mockCleared = localStorage.getItem('demashki_mock_cleared_v6');
-    if (!mockCleared) {
-      localStorage.removeItem('demashki_orders');
-      localStorage.removeItem('demashki_waste');
-      localStorage.removeItem('demashki_shifts');
-      localStorage.removeItem('demashki_menu');
-      localStorage.removeItem('demashki_tables');
-      localStorage.removeItem('demashki_past_shifts');
-      localStorage.removeItem('demashki_tables_data');
-      localStorage.removeItem('demashki_branches'); // Reset branches to clean INITIAL_BRANCHES
-      localStorage.removeItem('demashki_menu_catalog'); // Reset menu catalog
-      localStorage.removeItem('demashki_staff'); // Clear staff accounts
-      localStorage.setItem('demashki_mock_cleared_v6', 'true');
-      // Trigger a page refresh to force-initialize everything to the clean slate
-      window.location.reload();
-      return;
-    }
+  // ── Sync Helper function for diff-based writes ──
+  const syncCollection = useCallback(async (collectionName, nextItems, currentItems, keyName = 'id') => {
+    try {
+      const currentMap = new Map(currentItems.map(item => [String(item[keyName]), item]));
+      const nextMap = new Map(nextItems.map(item => [String(item[keyName]), item]));
 
-    const storedAuth = localStorage.getItem('demashki_auth');
-    const storedRole = localStorage.getItem('demashki_role');
-    const storedBranch = localStorage.getItem('demashki_branch');
-    const storedUser = localStorage.getItem('demashki_user');
+      // Write / update changed or new items
+      for (const [key, item] of nextMap.entries()) {
+        const currentVal = currentMap.get(key);
+        if (!currentVal || JSON.stringify(currentVal) !== JSON.stringify(item)) {
+          await setDoc(doc(db, collectionName, key), item);
+        }
+      }
+
+      // Delete removed items
+      for (const key of currentMap.keys()) {
+        if (!nextMap.has(key)) {
+          await deleteDoc(doc(db, collectionName, key));
+        }
+      }
+    } catch (e) {
+      console.error(`Error syncing collection ${collectionName} with Firestore:`, e);
+    }
+  }, []);
+
+  // ── Custom State Setters that sync to Firestore ──
+  const setOrders = useCallback((arg) => {
+    const nextOrders = typeof arg === 'function' ? arg(orders) : arg;
+    const sanitised = sanitiseOrders(nextOrders);
+    syncCollection('orders', sanitised, orders, 'id');
+  }, [orders, syncCollection]);
+
+  const setWasteLogs = useCallback((arg) => {
+    const nextWaste = typeof arg === 'function' ? arg(wasteLogs) : arg;
+    syncCollection('waste', nextWaste, wasteLogs, 'id');
+  }, [wasteLogs, syncCollection]);
+
+  const setPastShifts = useCallback((arg) => {
+    const nextShifts = typeof arg === 'function' ? arg(pastShifts) : arg;
+    syncCollection('shifts', nextShifts, pastShifts, 'id');
+  }, [pastShifts, syncCollection]);
+
+  const setBranches = useCallback((arg) => {
+    const nextBranches = typeof arg === 'function' ? arg(branches) : arg;
+    syncCollection('branches', nextBranches, branches, 'code');
+  }, [branches, syncCollection]);
+
+  const setMenuCatalog = useCallback((arg) => {
+    const nextMenu = typeof arg === 'function' ? arg(menuCatalog) : arg;
+    syncCollection('menu', nextMenu, menuCatalog, 'id');
+  }, [menuCatalog, syncCollection]);
+
+  const setStaff = useCallback((arg) => {
+    const nextStaff = typeof arg === 'function' ? arg(staff) : arg;
+    syncCollection('staff', nextStaff, staff, 'id');
+  }, [staff, syncCollection]);
+
+  const setTablesData = useCallback((arg) => {
+    const nextTables = typeof arg === 'function' ? arg(tablesData) : arg;
+    try {
+      Object.keys(nextTables).forEach(async (branchKey) => {
+        const nextBranchTables = nextTables[branchKey] || [];
+        const currentBranchTables = tablesData[branchKey] || [];
+        if (JSON.stringify(nextBranchTables) !== JSON.stringify(currentBranchTables)) {
+          await setDoc(doc(db, 'tables', branchKey), { tables: nextBranchTables });
+        }
+      });
+    } catch (e) {
+      console.error('Error syncing tablesData with Firestore:', e);
+    }
+  }, [tablesData]);
+
+  // ── Client-Side Hydration: Restore Auth once on mount (using sessionStorage/localStorage) ──
+  useEffect(() => {
+    const storedAuth = sessionStorage.getItem('demashki_auth') || localStorage.getItem('demashki_auth');
+    const storedRole = sessionStorage.getItem('demashki_role') || localStorage.getItem('demashki_role');
+    const storedBranch = sessionStorage.getItem('demashki_branch') || localStorage.getItem('demashki_branch');
+    const storedUser = sessionStorage.getItem('demashki_user') || localStorage.getItem('demashki_user');
 
     if (storedAuth === 'true') {
       setIsAuthenticated(true);
+      signInAnonymously(auth).catch((err) =>
+        console.warn('Firebase anonymous sign-in error:', err)
+      );
     }
     if (storedRole) {
       setAdminRole(storedRole);
@@ -179,81 +238,19 @@ export function AppProvider({ children }) {
     if (storedUser) {
       setAdminUser(storedUser);
     }
-
-    // Hydrate ERP Data Matrices
-    const storedOrders = localStorage.getItem('demashki_orders');
-    if (storedOrders) {
-      try {
-        setOrders(JSON.parse(storedOrders));
-      } catch (e) {
-        console.error('Error parsing orders from localStorage', e);
-      }
-    }
-
-    const storedWaste = localStorage.getItem('demashki_waste');
-    if (storedWaste) {
-      try {
-        setWasteLogs(JSON.parse(storedWaste));
-      } catch (e) {
-        console.error('Error parsing wasteLogs from localStorage', e);
-      }
-    }
-
-    const storedShifts = localStorage.getItem('demashki_shifts');
-    if (storedShifts) {
-      try {
-        setPastShifts(JSON.parse(storedShifts));
-      } catch (e) {
-        console.error('Error parsing pastShifts from localStorage', e);
-      }
-    }
-
-    const storedTables = localStorage.getItem('demashki_tables');
-    if (storedTables) {
-      try {
-        setTablesData(JSON.parse(storedTables));
-      } catch (e) {
-        console.error('Error parsing tablesData from localStorage', e);
-      }
-    }
-
-    const storedBranches = localStorage.getItem('demashki_branches');
-    if (storedBranches) {
-      try {
-        setBranches(JSON.parse(storedBranches));
-      } catch (e) {
-        console.error('Error parsing branches from localStorage', e);
-      }
-    }
-
-    const storedMenu = localStorage.getItem('demashki_menu');
-    if (storedMenu) {
-      try {
-        setMenuCatalog(JSON.parse(storedMenu));
-      } catch (e) {
-        console.error('Error parsing menuCatalog from localStorage', e);
-      }
-    }
-
-    const storedStaff = localStorage.getItem('demashki_staff');
-    if (storedStaff) {
-      try {
-        setStaff(JSON.parse(storedStaff));
-      } catch (e) {
-        console.error('Error parsing staff from localStorage', e);
-      }
-    } else {
-      setStaff(INITIAL_STAFF);
-    }
-
-    setIsMounted(true);
   }, []);
 
-  // ── Persist auth state changes to localStorage ──
+  // ── Persist Auth state changes to sessionStorage & localStorage ──
   useEffect(() => {
     if (isMounted) {
       try {
-        localStorage.setItem('demashki_auth', isAuthenticated ? 'true' : 'false');
+        const authStr = isAuthenticated ? 'true' : 'false';
+        sessionStorage.setItem('demashki_auth', authStr);
+        sessionStorage.setItem('demashki_role', adminRole);
+        sessionStorage.setItem('demashki_branch', adminBranch);
+        sessionStorage.setItem('demashki_user', adminUser);
+
+        localStorage.setItem('demashki_auth', authStr);
         localStorage.setItem('demashki_role', adminRole);
         localStorage.setItem('demashki_branch', adminBranch);
         localStorage.setItem('demashki_user', adminUser);
@@ -263,40 +260,100 @@ export function AppProvider({ children }) {
     }
   }, [isAuthenticated, adminRole, adminBranch, adminUser, isMounted]);
 
-  // ── Persist branches state changes to localStorage ──
+  // ── Firestore Real-time Subscriptions ──
   useEffect(() => {
-    if (isMounted) safePersist('demashki_branches', branches);
-  }, [branches, isMounted]);
+    // 1. Subscribe to orders
+    const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      list.sort((a, b) => (b.id || 0) - (a.id || 0));
+      setOrdersState(list);
+    });
 
-  // ── Persist menu catalog state changes to localStorage ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_menu', menuCatalog);
-  }, [menuCatalog, isMounted]);
+    // 2. Subscribe to tables
+    const unsubTables = onSnapshot(collection(db, 'tables'), (snapshot) => {
+      const data = {};
+      snapshot.forEach((docSnap) => {
+        data[docSnap.id] = docSnap.data().tables || [];
+      });
+      if (Object.keys(data).length > 0) {
+        setTablesDataState(data);
+      } else {
+        // Seed initial tables data to Firestore
+        Object.keys(INITIAL_TABLES_DATA).forEach((branchKey) => {
+          setDoc(doc(db, 'tables', branchKey), { tables: INITIAL_TABLES_DATA[branchKey] });
+        });
+        setTablesDataState(INITIAL_TABLES_DATA);
+      }
+    });
 
-  // ── Persist staff state changes to localStorage ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_staff', staff);
-  }, [staff, isMounted]);
+    // 3. Subscribe to branches
+    const unsubBranches = onSnapshot(collection(db, 'branches'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      if (list.length > 0) {
+        setBranchesState(list);
+      } else {
+        // Seed initial branches to Firestore
+        INITIAL_BRANCHES.forEach((b) => {
+          setDoc(doc(db, 'branches', b.code), b);
+        });
+        setBranchesState(INITIAL_BRANCHES);
+      }
+    });
 
-  // ── Persist orders — strip base64 screenshots, cap at 200 entries ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_orders', orders, sanitiseOrders);
-  }, [orders, isMounted]);
+    // 4. Subscribe to menu
+    const unsubMenu = onSnapshot(collection(db, 'menu'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      list.sort((a, b) => (a.id || 0) - (b.id || 0));
+      setMenuCatalogState(list);
+    });
 
-  // ── Persist waste state changes to localStorage ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_waste', wasteLogs);
-  }, [wasteLogs, isMounted]);
+    // 5. Subscribe to waste
+    const unsubWaste = onSnapshot(collection(db, 'waste'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      list.sort((a, b) => (b.id || 0) - (a.id || 0));
+      setWasteLogsState(list);
+    });
 
-  // ── Persist past shifts state changes to localStorage ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_shifts', pastShifts);
-  }, [pastShifts, isMounted]);
+    // 6. Subscribe to shifts
+    const unsubShifts = onSnapshot(collection(db, 'shifts'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      list.sort((a, b) => (b.id || 0) - (a.id || 0));
+      setPastShiftsState(list);
+    });
 
-  // ── Persist tables state changes to localStorage ──
-  useEffect(() => {
-    if (isMounted) safePersist('demashki_tables', tablesData);
-  }, [tablesData, isMounted]);
+    // 7. Subscribe to staff
+    const unsubStaff = onSnapshot(collection(db, 'staff'), (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => list.push(docSnap.data()));
+      list.sort((a, b) => (a.id || 0) - (b.id || 0));
+      if (list.length > 0) {
+        setStaffState(list);
+      } else {
+        // Seed initial staff to Firestore
+        INITIAL_STAFF.forEach((s) => {
+          setDoc(doc(db, 'staff', String(s.id)), s);
+        });
+        setStaffState(INITIAL_STAFF);
+      }
+    });
+
+    setIsMounted(true);
+
+    return () => {
+      unsubOrders();
+      unsubTables();
+      unsubBranches();
+      unsubMenu();
+      unsubWaste();
+      unsubShifts();
+      unsubStaff();
+    };
+  }, []);
 
   // ── Auto-dismiss toast after 3 seconds ──
   useEffect(() => {
