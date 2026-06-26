@@ -91,6 +91,8 @@ export default function CheckoutPage() {
     orders,
     setOrders,
     playChime,
+    addToCart,
+    decrementCartItem,
   } = useAppContext();
 
   const [deliveryMethod, setDeliveryMethod] = useState('delivery');
@@ -485,7 +487,29 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 </div>
-                <span className="font-bold text-primary text-sm">{(item.price * (item.qty || 1))} ج.م</span>
+                {/* Qty stepper + line total */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="font-bold text-primary text-sm">{(item.price * (item.qty || 1))} ج.م</span>
+                  <div className="flex items-center gap-1 font-sans">
+                    <button
+                      type="button"
+                      onClick={() => decrementCartItem(item.id)}
+                      className="w-6 h-6 rounded bg-surface-container border border-outline-variant/40 text-on-surface font-bold text-sm flex items-center justify-center hover:bg-error/10 hover:text-error transition-colors cursor-pointer"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span className="text-xs font-mono font-bold w-4 text-center">{item.qty || 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => addToCart(item)}
+                      className="w-6 h-6 rounded bg-primary text-white font-bold text-sm flex items-center justify-center hover:bg-primary-container transition-colors cursor-pointer"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

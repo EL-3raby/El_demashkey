@@ -20,7 +20,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { cartItems } = useAppContext();
-  const cartCount = cartItems.length;
+  const cartCount = cartItems.reduce((total, item) => total + (item.qty || 1), 0);
 
   /**
    * Returns whether the given link path is the active route.

@@ -289,6 +289,20 @@ export function AppProvider({ children }) {
     setCartItems([]);
   }, []);
 
+  const decrementCartItem = useCallback((id) => {
+    setCartItems((prev) => {
+      const existing = prev.find((i) => i.id === id);
+      if (!existing) return prev;
+      if ((existing.qty || 1) <= 1) {
+        // Remove the item entirely when qty would reach 0
+        return prev.filter((i) => i.id !== id);
+      }
+      return prev.map((i) =>
+        i.id === id ? { ...i, qty: (i.qty || 1) - 1 } : i
+      );
+    });
+  }, []);
+
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * (item.qty || 1), 0);
 
   // ── Context Value ──
@@ -298,6 +312,7 @@ export function AppProvider({ children }) {
     setCartItems,
     addToCart,
     removeFromCart,
+    decrementCartItem,
     clearCart,
     cartTotal,
 

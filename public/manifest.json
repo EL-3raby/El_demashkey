@@ -1,0 +1,42 @@
+{
+  "name": "Demashki ERP",
+  "short_name": "دمشقي",
+  "description": "نظام إدارة وتوصيل مطعم دمشقي - دمنهور",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#8b0000",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "الطلبات",
+      "short_name": "طلبات",
+      "url": "/admin/orders",
+      "description": "لوحة الطلبات الحية"
+    },
+    {
+      "name": "المنيو",
+      "short_name": "المنيو",
+      "url": "/menu",
+      "description": "قائمة الطعام"
+    }
+  ],
+  "categories": ["food", "productivity", "business"]
+}
