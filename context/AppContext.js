@@ -298,6 +298,26 @@ export function AppProvider({ children }) {
     if (isMounted) safePersist('demashki_tables', tablesData);
   }, [tablesData, isMounted]);
 
+  // ── Cross-Tab Real-Time Sync (Listen to storage events) ──
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (!e.newValue) return;
+      try {
+        if (e.key === 'demashki_orders') setOrders(JSON.parse(e.newValue));
+        if (e.key === 'demashki_tables') setTablesData(JSON.parse(e.newValue));
+        if (e.key === 'demashki_waste') setWasteLogs(JSON.parse(e.newValue));
+        if (e.key === 'demashki_shifts') setPastShifts(JSON.parse(e.newValue));
+        if (e.key === 'demashki_menu') setMenuCatalog(JSON.parse(e.newValue));
+        if (e.key === 'demashki_staff') setStaff(JSON.parse(e.newValue));
+        if (e.key === 'demashki_branches') setBranches(JSON.parse(e.newValue));
+      } catch (err) {
+        console.error("Cross-tab sync error:", err);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // ── Auto-dismiss toast after 3 seconds ──
   useEffect(() => {
     if (toast.visible) {
